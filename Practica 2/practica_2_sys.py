@@ -201,3 +201,114 @@ axs[0].stem(n, signal.sawtooth(0.05*n, width=1))
 axs[1].stem(n, np.exp(-abs(n - 200)/50))
 plt.show()
 # %%
+
+'''
+calculo de Potencia señal periodica
+'''
+
+T=0.01
+t = np.arange(-2,2+T,T)
+x=3*np.sin(2*np.pi*1*t)
+plt.plot(t,x)
+plt.show()
+
+periodo = np.size(t)//4
+print(periodo)
+x_periodo = x[0:periodo]
+
+pot_x = np.mean(x[0:periodo]**2)
+print(pot_x)
+
+# %%
+'''
+Energía pulso rectangular
+'''
+pulso = np.concatenate((np.zeros(150),np.ones(151),np.zeros(100)), axis=0)
+plt.plot(np.arange(0,401), pulso)
+
+plt.show()
+f_sample = 1
+energia = (1/f_sample) * np.sum(pulso**2)
+print(energia)
+
+
+# %%
+'''
+★☆☆☆☆ - 2.06) Ahora sobre el codigo, luego de definir la función girodesplaza, colocamos lo siguiente (complete los fragmentos donde se indica):
+'''
+
+def girodesplaza(x, fs, t0, Giro):
+    
+    N = len(x)
+    d = t0*fs
+
+    if Giro == 1:
+        x = np.flipud(x)
+
+    x2 = np.zeros(N)
+
+    if d > 0:
+        for i in range(0,N-int(d)):
+            x2[int(i+d)]=x[i]
+    else:
+        for i in range(0,N+int(d)):
+            x2[i]=x[int(i-d)]
+
+    return x2
+
+
+T=0.01
+fs = 1/T
+t = np.arange(-1,1+T,T)
+
+#Creamos una sinusoide de 1 Hz, completar:
+x=np.sin(2*np.pi*t)             
+plt.figure()
+plt.plot(t,x)
+t0 = 0.25  
+giro = 1
+xgd = girodesplaza(x, fs, t0, giro)   # xgd es x girada y desplazada
+plt.figure()
+plt.plot(t,xgd)
+
+plt.show()
+# %%
+'''
+★☆☆☆☆ - 2.07) Usemos la función despgiro sobre la misma señal x y comparemos los resultados con girodesp
+'''
+
+def desplazagiro(x, fs, t0, Giro):
+    
+    N = len(x)
+    d = t0*fs
+    x2 = np.zeros(N)
+
+    if d > 0:
+        for i in range(0,N-int(d)):
+            x2[int(i+d)]=x[i]
+    else:
+        for i in range(0,N+int(d)):
+
+            x2[i]=x[int(i-d)]
+
+    if Giro == 1:
+        x2 = np.flipud(x2)
+
+    return x2
+
+
+# completar las primeras dos lìneas para hacer funcionar el script
+giro = 1
+xdg = desplazagiro(x, fs, t0, giro)   # xdg es x desplazada y girada
+
+plt.figure()
+plt.plot(t, xgd)
+plt.title('Giro y desplazo')
+plt.grid()
+
+plt.figure()
+plt.plot(t,xdg)
+plt.title('Desplazo y giro')
+plt.grid()
+plt.show()
+# %%
