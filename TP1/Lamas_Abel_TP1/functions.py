@@ -28,66 +28,138 @@ def descriptive(data):
         print('No es un tipo de dato reconocible')
         
         
-def graph(n, f_n):
+def graph_discrete(n, f_n, title):
     fig, ax = plt.subplots(1, 1)
     ax.stem(n, f_n)
+    ax.set_xlabel('Samples')
+    ax.set_ylabel('Amplitude')
+    ax.set_title(title)
     ax.grid()
     plt.show()
     
-def gen_discrete_signals(signal, start, stop, *args):
-# def gen_discrete_signals(*args):
-    """
+def control_range(t_x, t_i, t_f):
 
-    Args:
-        signal (str): _description_
-    Returns:
-        _type_: _description_
+    """Analyze if a value belongs to an open interval. 
+    
+    Parameters
+    ----------
+    t_x : float or int
+        Value to analyze
+    t_i : float or int
+        Where the interval starts
+    t_f : float or int
+        Where the interval ends
+    
+    Returns
+    -------
+    float or int
+        Return t_x if this belong at the interval (t_i, t_f)
+    bool
+        return False otherwise
     """
     
-    samples = np.arange(start, stop+1)
-
+    if type(t_x) is int and t_x > t_i and t_x < t_f:
+        return t_x
+    else: 
+        return False
     
-    if signal == "impulso":
-        t_0 = args[0]
-        if type(t_0) is int and t_0 > start and t_0 < stop:
-            zeros = np.zeros(len(samples))
-            zeros[samples == args[0]] = 1
-            graph(samples, zeros)
-        else:
-            raise ValueError("El 3er argumento debe ser un valor entero ubicado entre start y stop")
-        
-    elif signal == "escalon":
-        t_0 = args[0]
-        if type(t_0) is int and t_0 > start and t_0 < stop:
-            zeros = np.zeros(len(samples))
-            zeros[samples >= args[0]] = 1
-            graph(samples, zeros)
-        else:
-            raise ValueError("El 3er argumento debe ser un valor entero ubicado entre start y stop")
-        
-    elif signal == "tren_impulsos":
-        t_i = args[0]
-        t_f = args[1]
-        
-        if type(t_i) is int and t_i > start and t_i < stop:
-            if type(t_f) is int and t_f > start and t_f < stop:
-                if t_i <= t_f:
-                    zeros = np.zeros(len(samples))
-                    zeros[(samples >= args[0]) & (samples < args[1])] = 1
-                    graph(samples, zeros)
-                else:
-                    raise ValueError("El 3er argumento debe ser mayor que el 4to argumento")
-            else:
-                raise ValueError("El 3er argumento debe ser un valor entero ubicado entre start y stop")
-    elif signal == "triangular":
-        pass
-    elif signal == "aleatoria":
-        pass
+def gen_discrete_signals(signal:str, start:int, stop:int, t_impulse:int = 0, t_step:int = 0, t_init:int = -1, t_finish:int = 1, base_factor:float = 1.0, mean:float = 0, std:float = 1):
+    """Plot and return a values of impulse, step, impulse train, triangle and normal random.
+
+    Parameters
+    ----------
+    signal : str
+        Signal can be `impulse`, `step`, `impulse train`, `triangle` or `normal random`.
+    start : int
+        Determinates the starts from the plot and array returned.
+    stop : int
+        Determinates the end from the plot and array returned.
+    t_impulse : int, optional
+        Value where the impulse occurs, must be between start and stop, by default 0.
+    t_step : int, optional
+        Value where the step function begins, must be between start and stop, by default 0.
+    t_init : int, optional
+        Value from the train starts, by default -1.
+    t_finish : int, optional
+        Value until the train occurs, by default 1.
+    base_factor : float
+        Modified the half base distance to zero and the height of the triangle pulse, by default 1.0.
+    mean : float, optional
+        Mean value for the normal random distribution, by default 0.
+    std : float, optional
+        Standar desviation value for the normal random distribution. This can't be a negative value, by default 1.
+
+    Returns
+    -------
+    np.ndarray
+        Return an numpy array which contains the values of the signal
+    """
+  
+
+    if start > stop or start == stop:
+        raise ValueError('The argument stop must be greater than start')
     else:
-        return f"no se encuentra la función {signal}"
+        samples = np.arange(start, stop+1) #samples are integers
+
+    if signal == "impulse":
+        t_0 = control_range(t_impulse, start, stop) #control if the t_impulse belong at the interval (start,stop)
+        
+        if t_0 is not False:
+            zeros = np.zeros(len(samples))
+            zeros[samples == t_0] = 1
+            graph_discrete(samples, zeros, f'Impulse on {t_0}')
+            return zeros
+        else:
+            raise ValueError("The 4th argument must be a integer value between start and stop")
+                 
     
+    elif signal == "step":
+        t_step = control_range(t_step, start, stop) #control if the t_step belong at the interval (start,stop)
+        
+        if t_step != False:
+            zeros = np.zeros(len(samples))
+            zeros[samples >= t_step] = 1
+            graph_discrete(samples, zeros, f'Step Function from {t_step}' )
+            return zeros
+        else:
+            raise ValueError("The 4th argument must be a integer value between start and stop")
+        
+    elif signal == "impulse train":
+        t_i = control_range(t_init, start, stop) # t_i is where starts the impulse train
+        t_f = control_range(t_finish, start, stop) # t_f is where stops the train
+        
+        if t_i != False and t_f != False and t_i <= t_f:
+            zeros = np.zeros(len(samples))
+            zeros[(samples >= t_i) & (samples < t_f)] = 1
+            graph_discrete(samples, zeros, f'Impulse train from {t_i} to {t_f}')
+            return zeros
+        else:
+            raise ValueError("The 4th argument must be an integer between start and stop, also must be grater than the 5th argument")
+        
+    elif signal == "triangle":
+        base = base_factor
+        
+        if (type(base) is int or type(base) is float) and (base <= stop and base >= start):
+            base = abs(base)
+            slope = -abs(samples) + base
+            slope[(samples < -base) | (samples > base)] = 0
+            graph_discrete(samples, slope, f'Triangle with base factor {base}')
+            return slope
+        else:
+            raise ValueError("base_factor must be and integer or float value between start and stop values")
+            
+    elif signal == "normal random":
+        mean = float(mean)
+        std = float(std)
+
+        if (type(std) is float and type(mean) is float) and (std >= 0):
+            random_signal = np.random.normal(mean, std, len(samples))
+            graph_discrete(samples, random_signal, f'Normal random distribution with $\mu$ = {mean} and $\sigma$ = {std}')
+            return random_signal
+        else:
+            raise ValueError('The mean and std desviation must be float or integers. The std must be a non negative value.')
+    else:
+        raise ValueError(f"The function requerid: {signal} is no available")
     
 if __name__=="__main__":
-    # gen_discrete_signals("impulso", -2, 10, 5)
-    # gen_discrete_signals("escalon", -2, 10, 5)
-    gen_discrete_signals("tren_impulsos", -10, 10, 9, 100)
+    gen_discrete_signals('impulse', -5, 5)
