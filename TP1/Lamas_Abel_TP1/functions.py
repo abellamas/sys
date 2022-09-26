@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import time
 
@@ -9,7 +10,7 @@ def descriptive(data):
     Parameters
     ----------
     data : any
-        Variable to be evaluated, this only can be `int`, `str`, `float`, `list`, `tuple`, `dict`, `np.ndarray`
+        Variable to be evaluated, this only can be `int`, `str`, `float`, `list`, `tuple`, `dict` or `np.ndarray`
     """    
     
     type_data = type(data)
@@ -33,38 +34,66 @@ def descriptive(data):
         print('No es un tipo de dato reconocible')
         
         
-def graph_discrete(n, f_n, title, xticks: np.ndarray = None, url:str = None, file_name:str = None):
+def graph_discrete(n, f_n, title, xticks: np.ndarray = None):
+    """Show and return a plot of signal
+    
+    Parameters
+    ----------
+    n : np.array
+        Samples axis
+    f_n : np.array
+        Signal axis
+    title : str
+        Title for the signal plot
+    xticks: np.ndarray
+        Values for the samples axis (x-axis), by default is None. 
+        
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure object with the plot of signal
+    """
     fig, ax = plt.subplots(1, 1)
     ax.stem(n, f_n)
     ax.set_xlabel('Samples')
     ax.set_ylabel('Amplitude')
-    
     if xticks is not None:
         ax.set_xticks(xticks)
-        
     ax.set_title(title)
-    ax.grid()
-    
-    if url is not None:
-        plt.savefig(f'{url}{file_name}.png')
-        print(f'Plot save in {url}{file_name}')
-    
+    ax.grid()    
     plt.show()
     
-    return ax
+    return fig
 
-def save_files(title, numpy_obj, path_plot, path_values):
+def save_files(title:str, plot:matplotlib.figure.Figure, x:np.array, y:np.array, path_plot:str = None, path_values:str = None):
+    """Allows save a png and npy with data about a signal
+
+    Parameters
+    ----------
+    title : str
+        Title for the files
+    plot : matplotlib.figure.Figure
+        Figure Object that can be saved
+    x : np.array
+        x-axis values of the signal
+    y : np.array
+        y-axis values of the signal
+    path_plot : str, optional
+        Relative URL where save a image, by default None
+    path_values : str, optional
+        Relative URL where save a npy file, by default None
+    """
+
     file_name = f'{title.replace(" ","_")}_{time.strftime("%Y%m%d_%H%M%S")}'
+
+    if path_values is not None:
+        np.save(f'{path_values}{file_name}.npy', np.array([x, y]) )
+        print(f'Array values saved in {path_plot}{file_name}.npy')
+
     if path_plot is not None:
-        plt.savefig(f'{path_plot}{file_name}.png')
-    elif path_values is not None:
-        np.save(f'{path_values}{file_name}')
-    else:
-        return None
-    
-def numpy_save(np_values:np.ndarray, url:str = None, file_name:str = None):
-    if url is not None:
-        np.save(f'{url}{file_name}', np_values)
+        plot.savefig(f'{path_plot}{file_name}.png')
+        print(f'Plot save in {path_plot}{file_name}.png')
+
   
 def control_range(t_x, t_i, t_f):
 
@@ -135,31 +164,33 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
         samples = np.arange(start, stop+1) #samples are integers
 
     if signal == "impulse":
-        t_0 = control_range(t_impulse, start, stop) #control if the t_impulse belong at the interval (start,stop)
+        t_0 = control_range(t_impulse, start, stop)
         
         if t_0 is not False:
-            zeros = np.zeros(len(samples))
-            zeros[samples == t_0] = 1
+            impulse = np.zeros(len(samples))
+            impulse[samples == t_0] = 1
             title = f'Impulse on {t_0}'
-            file_name = f'{title.replace(" ","_")}_{time.strftime("%Y%m%d_%H%M%S")}'
-            numpy_save(zeros, path_values, file_name)
-            graph_discrete(samples, zeros, title, samples, path_plot, file_name)
-            return zeros
+            plot_signal = graph_discrete(samples, impulse, title, samples) #plot the signal and return an Figure object to be saved
+            save_files(title, plot_signal, samples, impulse, path_plot, path_values) #allows save the plot and arrays samples and impulse
+            
+            return impulse
+      
         else:
             raise ValueError("The 4th argument must be a integer value between start and stop")
                  
     
     elif signal == "step":
-        t_step = control_range(t_step, start, stop) #control if the t_step belong at the interval (start,stop)
+        t_step = control_range(t_step, start, stop)
         
         if t_step is not False:
-            zeros = np.zeros(len(samples))
-            zeros[samples >= t_step] = 1
+            step = np.zeros(len(samples))
+            step[samples >= t_step] = 1
             title = f'Step Function from {t_step}'
-            file_name = f'{title.replace(" ","_")}_{time.strftime("%Y%m%d_%H%M%S")}'
-            numpy_save(zeros, path_values, file_name)
-            graph_discrete(samples, zeros, title, samples, path_plot, file_name)
-            return zeros
+            plot_signal = graph_discrete(samples, step, title, samples)
+            save_files(title, plot_signal, samples, step, path_plot, path_values)
+
+            return step
+
         else:
             raise ValueError("The 4th argument must be a integer value between start and stop")
         
@@ -168,12 +199,12 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
         t_f = control_range(t_finish, start, stop) # t_f is where stops the train
         
         if t_i != False and t_f != False and t_i <= t_f:
-            zeros = np.zeros(len(samples))
-            zeros[(samples >= t_i) & (samples < t_f)] = 1
+            impulse_train = np.zeros(len(samples))
+            impulse_train[(samples >= t_i) & (samples < t_f)] = 1
             title = f'Impulse train from {t_i} to {t_f}'
-            file_name = f'{title.replace(" ","_")}_{time.strftime("%Y%m%d_%H%M%S")}'
-            graph_discrete(samples, zeros, title, samples, path_plot, file_name)
-            return zeros
+            plot_signal = graph_discrete(samples, impulse_train, title, samples)
+            save_files(title, plot_signal, samples, impulse_train, path_plot, path_values)
+            return impulse_train
         else:
             raise ValueError("The 4th argument must be an integer between start and stop, also must be grater than the 5th argument")
         
@@ -182,14 +213,12 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
         
         if (type(base) is int or type(base) is float) and (base <= stop and base >= start):
             base = abs(base)
-            slope = -abs(samples) + base
-            slope[(samples < -base) | (samples > base)] = 0
-            
+            triangle = -abs(samples) + base
+            triangle[(samples < -base) | (samples > base)] = 0
             title = f'Triangle with base factor {base}'
-            file_name = f'{title.replace(" ","_")}_{time.strftime("%Y%m%d_%H%M%S")}'
-            
-            graph_discrete(samples, slope, title, samples, path_plot, file_name)
-            return slope
+            plot_signal = graph_discrete(samples, triangle, title, samples)
+            save_files(title, plot_signal, samples, triangle, path_plot, path_values)
+            return triangle
         else:
             raise ValueError("base_factor must be and integer or float value between start and stop values")
             
@@ -200,8 +229,8 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
         if (type(std) is float and type(mean) is float) and (std >= 0):
             random_signal = np.random.normal(mean, std, len(samples))
             title = f'Normal random with $\mu$ = {mean} and $\sigma$ = {std}'
-            file_name = f'{title.replace(" ","_")}_{time.strftime("%Y%m%d_%H%M%S")}'
-            graph_discrete(samples, random_signal, title, samples, path_plot, file_name)
+            plot_signal = graph_discrete(samples, random_signal, title, samples)
+            save_files(title, plot_signal, samples, random_signal, path_plot, path_values)
             return random_signal
         else:
             raise ValueError('The mean and std desviation must be float or integers. The std must be a non negative value.')
@@ -209,4 +238,8 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
         raise ValueError(f"The function requerid: {signal} is no available")
     
 if __name__=="__main__":
-    gen_discrete_signals('impulse', -5, 5)
+    # gen_discrete_signals('impulse', -5, 5)
+    prueba = np.load('./files/Impulse_on_2_20220926_020524.npy')
+    print(prueba[0])
+    print(prueba[1])
+    
