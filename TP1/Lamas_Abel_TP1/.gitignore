@@ -1,0 +1,6 @@
+/images/*.png
+/files/*.npy
+!/files/loudspeaker_Genelec.npy
+!/files/loudspeaker_JBL.npy
+./.ipynb_checkpoints
+./__pycache__

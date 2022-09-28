@@ -236,10 +236,76 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
             raise ValueError('The mean and std desviation must be float or integers. The std must be a non negative value.')
     else:
         raise ValueError(f"The function requerid: {signal} is no available")
+
+def gen_n_sin(t_start:float, t_end:float, f_sample:float, frequencies:list):
+    """For each entered frequency generate a sine signal 
+
+    Parameters
+    ----------
+    t_start : float
+        Time to start the vector time
+    t_end : float
+        Time to start the vector time
+    f_sample : float
+        Sample frequency
+    frequencies : list
+        Contains the diferent values of frecuencies for each signal
+
+    Returns
+    -------
+    list
+        Return a list composed for tuples for each frequency in the next order:
+        (array time, array sine at f frequency, label of signal) 
+    """
+    freq = frequencies
+    t = np.arange(t_start, t_end + 1/f_sample, 1/f_sample)
+    sin_array = np.empty((0, len(t))) # create an empty np array with dimensions 0 and the quantity of samples t
+    label_sin = []
+    output_array = [] # will be contain tuples for each frequency
+    n = 0
     
-if __name__=="__main__":
-    # gen_discrete_signals('impulse', -5, 5)
-    prueba = np.load('./files/Impulse_on_2_20220926_020524.npy')
-    print(prueba[0])
-    print(prueba[1])
+    for f in freq:
+        
+        sin_array = np.append(sin_array, np.array([np.sin(2*np.pi*f*t)]), axis=0) #appends each sin at f frequency in an array
+        label_sin.append(f'sin_{n}_freq_{f}') #append the label of each sin in a list
+        n=n+1
+        
+    for i in range(len(freq)):
+        #concatenate the results in a list of tuples
+        output_array.append((t, sin_array[i], label_sin[i]))
+        
+    return output_array
+
     
+def plot_sin_list(sines:list, **kwargs):
+    """Graphs many sines signals on a same plot
+
+    Parameters
+    ----------
+    sines : list
+        List composed for tuples for each frequency in the next order:
+        (array time, array sine at f frequency, label of signal)  
+    color: list, optional
+        Color for each sine signal can be modified in respective order
+    linestyle: list, optional
+        Linestyle for each sine signal can be modified in respective order
+    linewidth: list, optional
+        Linewidth for each sine signal can be modified in respective order
+    """
+    options_plot = kwargs
+    fig, ax = plt.subplots()
+    ax.set_title('Plot Sines')
+    ax.set_xlabel('Samples')
+    ax.set_ylabel('Amplitude')
+    i=0
+    for sin in sines:
+        ax.plot(sin[0], sin[1], label = sin[2], 
+                color = options_plot['color'][i] if 'color' in options_plot else None,
+                linestyle = options_plot['linestyle'][i] if 'linestyle' in options_plot else None,
+                linewidth = options_plot['linewidth'][i] if 'linewidth' in options_plot else None
+                )
+        i=i+1
+    
+    ax.legend(loc='upper right')
+    ax.grid()   
+    plt.show()
