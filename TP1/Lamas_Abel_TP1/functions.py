@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import time
-
+import os
 
 def descriptive(data):
     """Print descriptive information about the argument 'data'
@@ -34,15 +34,17 @@ def descriptive(data):
         print('No es un tipo de dato reconocible')
         
         
-def graph_discrete(n, f_n, title, xticks: np.ndarray = None):
+def graph_discrete(n:np.ndarray, f_n:np.ndarray, title:str, show:bool = False, xticks: np.ndarray = None):
     """Show and return a plot of signal
     
     Parameters
     ----------
-    n : np.array
+    n : np.ndarray
         Samples axis
-    f_n : np.array
+    f_n : np.ndarray
         Signal axis
+    show : bool
+        Allow show the graphic on screen
     title : str
         Title for the signal plot
     xticks: np.ndarray
@@ -60,9 +62,10 @@ def graph_discrete(n, f_n, title, xticks: np.ndarray = None):
     if xticks is not None:
         ax.set_xticks(xticks)
     ax.set_title(title)
-    ax.grid()    
-    plt.show()
-    
+    ax.grid()
+    if show:    
+        plt.show()
+        
     return fig
 
 def save_files(title:str, plot:matplotlib.figure.Figure, x:np.array, y:np.array, path_plot:str = None, path_values:str = None):
@@ -83,17 +86,30 @@ def save_files(title:str, plot:matplotlib.figure.Figure, x:np.array, y:np.array,
     path_values : str, optional
         Relative URL where save a npy file, by default None
     """
-
+    
+    
     file_name = f'{title.replace(" ","_")}_{time.strftime("%Y%m%d_%H%M%S")}'
 
     if path_values is not None:
-        np.save(f'{path_values}{file_name}.npy', np.array([x, y]) )
-        print(f'Array values saved in {path_plot}{file_name}.npy')
-
+        if os.path.isdir(path_values):
+            np.save(f'{path_values}{file_name}.npy', np.array([x, y]) )
+            print(f'Array values saved in {path_plot}{file_name}.npy')
+        else:
+            os.mkdir(path_values)
+            np.save(f'{path_values}{file_name}.npy', np.array([x, y]) )
+            print(f'Folder {path_values} created in repo...')
+            print(f'Array values saved in {path_plot}{file_name}.npy')
+            
     if path_plot is not None:
-        plot.savefig(f'{path_plot}{file_name}.png')
-        print(f'Plot save in {path_plot}{file_name}.png')
-
+        if os.path.isdir(path_plot):
+            plot.savefig(f'{path_plot}{file_name}.png')
+            print(f'Plot save in {path_plot}{file_name}.png')
+        else:
+            os.mkdir(path_plot)
+            plot.savefig(f'{path_plot}{file_name}.png')
+            print(f'Folder {path_plot} created in repo...')
+            print(f'Plot save in {path_plot}{file_name}.png')
+            
   
 def control_range(t_x, t_i, t_f):
 
@@ -121,7 +137,7 @@ def control_range(t_x, t_i, t_f):
     else: 
         return False
     
-def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, path_values: str = None, t_impulse:int = 0, t_step:int = 0, t_init:int = -1, t_finish:int = 1, base_factor:float = 1.0, mean:float = 0, std:float = 1):
+def gen_discrete_signals(signal:str, start:int, stop:int, show:bool = False, path_plot:str = None, path_values: str = None, t_impulse:int = 0, t_step:int = 0, t_init:int = -1, t_finish:int = 1, base_factor:float = 1.0, mean:float = 0, std:float = 1):
     """Plot and return a values of impulse, step, impulse train, triangle and normal random.
 
     Parameters
@@ -132,6 +148,8 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
         Determinates the starts from the plot and array returned.
     stop : int
         Determinates the end from the plot and array returned.
+    show: bool, optional
+        Allows generate a graphic with matplotlib
     path_plot : str, optional
         Relative URL where the figure will be save, by default is None.
     path_values : str, optional
@@ -153,8 +171,8 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
 
     Returns
     -------
-    np.ndarray
-        Return an numpy array which contains the values of the signal
+    tuple
+        Return an tuple which contains samples (x-axis) and the values of the signal (y-axis)
     """
   
 
@@ -170,10 +188,10 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
             impulse = np.zeros(len(samples))
             impulse[samples == t_0] = 1
             title = f'Impulse on {t_0}'
-            plot_signal = graph_discrete(samples, impulse, title, samples) #plot the signal and return an Figure object to be saved
+            plot_signal = graph_discrete(samples, impulse, title, show, samples) #plot the signal and return an Figure object to be saved
             save_files(title, plot_signal, samples, impulse, path_plot, path_values) #allows save the plot and arrays samples and impulse
             
-            return impulse
+            return (samples, impulse)
       
         else:
             raise ValueError("The 4th argument must be a integer value between start and stop")
@@ -186,10 +204,10 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
             step = np.zeros(len(samples))
             step[samples >= t_step] = 1
             title = f'Step Function from {t_step}'
-            plot_signal = graph_discrete(samples, step, title, samples)
+            plot_signal = graph_discrete(samples, step, title, show, samples)
             save_files(title, plot_signal, samples, step, path_plot, path_values)
 
-            return step
+            return (samples, step)
 
         else:
             raise ValueError("The 4th argument must be a integer value between start and stop")
@@ -202,9 +220,9 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
             impulse_train = np.zeros(len(samples))
             impulse_train[(samples >= t_i) & (samples < t_f)] = 1
             title = f'Impulse train from {t_i} to {t_f}'
-            plot_signal = graph_discrete(samples, impulse_train, title, samples)
+            plot_signal = graph_discrete(samples, impulse_train, title, show, samples)
             save_files(title, plot_signal, samples, impulse_train, path_plot, path_values)
-            return impulse_train
+            return (samples, impulse_train)
         else:
             raise ValueError("The 4th argument must be an integer between start and stop, also must be grater than the 5th argument")
         
@@ -216,9 +234,9 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
             triangle = -abs(samples) + base
             triangle[(samples < -base) | (samples > base)] = 0
             title = f'Triangle with base factor {base}'
-            plot_signal = graph_discrete(samples, triangle, title, samples)
+            plot_signal = graph_discrete(samples, triangle, title, show, samples)
             save_files(title, plot_signal, samples, triangle, path_plot, path_values)
-            return triangle
+            return (samples, triangle)
         else:
             raise ValueError("base_factor must be and integer or float value between start and stop values")
             
@@ -229,9 +247,9 @@ def gen_discrete_signals(signal:str, start:int, stop:int, path_plot:str = None, 
         if (type(std) is float and type(mean) is float) and (std >= 0):
             random_signal = np.random.normal(mean, std, len(samples))
             title = f'Normal random with $\mu$ = {mean} and $\sigma$ = {std}'
-            plot_signal = graph_discrete(samples, random_signal, title, samples)
+            plot_signal = graph_discrete(samples, random_signal, title, show, samples)
             save_files(title, plot_signal, samples, random_signal, path_plot, path_values)
-            return random_signal
+            return (samples, random_signal)
         else:
             raise ValueError('The mean and std desviation must be float or integers. The std must be a non negative value.')
     else:

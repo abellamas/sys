@@ -14,7 +14,8 @@ measures = [
 loudspeakers = ['Genelec', 'JBL'] # loudspeakers measured
 graphics = ['Magnitude [dB]', 'Phase [deg]'] # plots that are necessary
 
-freq_ticks = [20,100,1000,10000] # values of frequency to show 
+freq_ticks = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000] # values of frequency to show 
+freq_ticks_labels = ['31.5', '63', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'] # values of frequency to show 
 y_ticks = [np.arange(70, 92, 3), np.arange(-180, 181, 30)] # values of magnitude and phase
 
 fig, axs = plt.subplots(len(graphics), 1, figsize=(12, 8)) # Instance of Figure and Axes
@@ -30,7 +31,7 @@ for graph in range(len(graphics)):
     axs[graph].set_xlabel('Frequency [Hz]')
     axs[graph].set_ylabel(graphics[graph])
     #set axes ticks
-    axs[graph].set_xticks(freq_ticks, freq_ticks)
+    axs[graph].set_xticks(freq_ticks, freq_ticks_labels)
     axs[graph].set_yticks(y_ticks[graph], y_ticks[graph])
     
     axs[graph].set_xlim([20,20000])
